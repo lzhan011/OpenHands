@@ -13,6 +13,13 @@ export function transformVSCodeUrl(vsCodeUrl: string | null): string | null {
   try {
     const url = new URL(vsCodeUrl);
 
+    // Backend-provided editor URLs are opened in a new browser tab. Only web
+    // URLs are valid here; rejecting every other scheme also keeps malformed
+    // values from reaching window.open at call sites that reuse this helper.
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
     // Check if the URL points to localhost
     if (
       url.hostname === "localhost" &&
@@ -25,7 +32,6 @@ export function transformVSCodeUrl(vsCodeUrl: string | null): string | null {
 
     return vsCodeUrl;
   } catch {
-    // Silently handle the error and return the original URL
-    return vsCodeUrl;
+    return null;
   }
 }

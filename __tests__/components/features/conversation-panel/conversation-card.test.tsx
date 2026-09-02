@@ -23,6 +23,7 @@ import {
 } from "#/api/backend-registry/active-store";
 import type { Backend } from "#/api/backend-registry/types";
 import { ActiveBackendProvider } from "#/contexts/active-backend-context";
+import ConversationService from "#/api/conversation-service/conversation-service.api";
 
 // We'll use the actual i18next implementation but override the translation function
 
@@ -410,6 +411,35 @@ describe("ConversationCard", () => {
 
     expect(onArchive).toHaveBeenCalled();
     expect(onContextMenuToggle).toHaveBeenCalledWith(false);
+  });
+
+  it("opens a validated VS Code URL without exposing window.opener", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(ConversationService, "getVSCodeUrl").mockResolvedValue({
+      vscode_url: "https://editor.example.test/vscode",
+    });
+
+    renderWithProviders(
+      <ConversationCard
+        title="Conversation 1"
+        selectedRepository={null}
+        lastUpdatedAt="2021-10-01T12:00:00Z"
+        conversationId="conversation-1"
+        contextMenuOpen
+        onContextMenuToggle={vi.fn()}
+        showOptions
+      />,
+    );
+
+    await user.click(screen.getByTestId("download-vscode-button"));
+
+    await vi.waitFor(() => {
+      expect(window.open).toHaveBeenCalledWith(
+        "https://editor.example.test/vscode",
+        "_blank",
+        "noopener,noreferrer",
+      );
+    });
   });
 
   test("clicking the selectedRepository should not trigger the onClick handler", async () => {
